@@ -32,8 +32,9 @@ export class AtomicWorktreeOperation {
      * @param path - Path for the new worktree
      * @param branch - Branch name
      * @param createBranch - Whether to create a new branch with -b flag
+     * @param startPoint - Ref to create the new branch from (defaults to HEAD when omitted)
      */
-    async createWorktree(path: string, branch: string, createBranch: boolean = false): Promise<void> {
+    async createWorktree(path: string, branch: string, createBranch: boolean = false, startPoint?: string): Promise<void> {
         const args = ["worktree", "add"];
         if (createBranch) {
             args.push("-b", branch);
@@ -41,6 +42,8 @@ export class AtomicWorktreeOperation {
         args.push(path);
         if (!createBranch) {
             args.push(branch);
+        } else if (startPoint) {
+            args.push(startPoint);
         }
 
         await execa("git", args);

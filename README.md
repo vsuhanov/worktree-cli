@@ -293,6 +293,25 @@ Branch names with slashes are converted to dashes for directory names:
 
 This ensures uniqueness: `feature/auth` and `hotfix/auth` create different directories.
 
+### Configure Base Branch
+
+New branches can be created from a fixed ref such as `origin/main` instead of your current `HEAD`. When a base is set, the dirty-worktree prompt is skipped, because the new branch no longer depends on your checkout. If the base is a remote branch, it is fetched first.
+
+```bash
+wt new feature/login --base origin/main   # one-off, via flag
+
+wt config set basebranch origin/main      # global default for all repositories
+wt config set basebranch origin/main --repo  # default for this repository only (stored in .git/config)
+
+wt config get basebranch                  # global value
+wt config get basebranch --repo           # repository value
+
+wt config clear basebranch                # clear global value
+wt config clear basebranch --repo         # clear repository value
+```
+
+Resolution order: `--base` flag, then the repository setting, then the global setting, then `HEAD`. If the branch already exists locally, the base is ignored. The same options apply to `wt setup`.
+
 ### Setup Worktree Configuration
 
 You can define setup commands in one of two locations to automatically execute them when using `wt setup`:

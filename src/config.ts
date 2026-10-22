@@ -14,6 +14,7 @@ interface ConfigSchema {
     defaultEditor: string;
     gitProvider: 'gh' | 'glab';
     defaultWorktreePath?: string;
+    baseBranch?: string;
 }
 
 // Initialize conf with a schema and project name
@@ -31,6 +32,10 @@ const schema = {
     defaultWorktreePath: {
         type: 'string',
         // No default - falls back to sibling directory behavior when not set
+    },
+    baseBranch: {
+        type: 'string',
+        // No default - new branches start from HEAD when not set
     },
 } as const;
 
@@ -94,4 +99,19 @@ export function setDefaultWorktreePath(worktreePath: string): void {
 // Function to clear the default worktree path
 export function clearDefaultWorktreePath(): void {
     config.delete('defaultWorktreePath');
-} 
+}
+
+// Function to get the global base branch for new worktrees
+export function getGlobalBaseBranch(): string | undefined {
+    return config.get('baseBranch');
+}
+
+// Function to set the global base branch for new worktrees
+export function setGlobalBaseBranch(baseBranch: string): void {
+    config.set('baseBranch', baseBranch);
+}
+
+// Function to clear the global base branch
+export function clearGlobalBaseBranch(): void {
+    config.delete('baseBranch');
+}

@@ -1,7 +1,12 @@
 import chalk from 'chalk';
-import { getDefaultEditor, setDefaultEditor, getGitProvider, setGitProvider, getConfigPath, getDefaultWorktreePath, setDefaultWorktreePath, clearDefaultWorktreePath } from '../config.js';
+import { getDefaultEditor, setDefaultEditor, getGitProvider, setGitProvider, getConfigPath, getDefaultWorktreePath, setDefaultWorktreePath, clearDefaultWorktreePath, getGlobalBaseBranch, setGlobalBaseBranch, clearGlobalBaseBranch } from '../config.js';
+import { getRepoBaseBranch, setRepoBaseBranch, clearRepoBaseBranch } from '../utils/base.js';
 
-export async function configHandler(action: 'get' | 'set' | 'path' | 'clear', key?: string, value?: string) {
+export interface ConfigScope {
+    repo?: boolean;
+}
+
+export async function configHandler(action: 'get' | 'set' | 'path' | 'clear', key?: string, value?: string, scope: ConfigScope = {}) {
     try {
         switch (action) {
             case 'get':
@@ -18,9 +23,25 @@ export async function configHandler(action: 'get' | 'set' | 'path' | 'clear', ke
                     } else {
                         console.log(chalk.blue(`Default worktree path is not set (using sibling directory behavior).`));
                     }
+                } else if (key === 'basebranch') {
+                    if (scope.repo) {
+                        const baseBranch = await getRepoBaseBranch();
+                        if (baseBranch) {
+                            console.log(chalk.blue(`Base branch for this repository is currently set to: ${chalk.bold(baseBranch)}`));
+                        } else {
+                            console.log(chalk.blue(`Base branch for this repository is not set.`));
+                        }
+                    } else {
+                        const baseBranch = getGlobalBaseBranch();
+                        if (baseBranch) {
+                            console.log(chalk.blue(`Global base branch is currently set to: ${chalk.bold(baseBranch)}`));
+                        } else {
+                            console.log(chalk.blue(`Global base branch is not set (new branches start from HEAD).`));
+                        }
+                    }
                 } else {
                     console.error(chalk.red(`Unknown configuration key to get: ${key}`));
-                    console.error(chalk.yellow(`Available keys: editor, provider, worktreepath`));
+                    console.error(chalk.yellow(`Available keys: editor, provider, worktreepath, basebranch`));
                     process.exit(1);
                 }
                 break;
@@ -40,6 +61,14 @@ export async function configHandler(action: 'get' | 'set' | 'path' | 'clear', ke
                     setDefaultWorktreePath(value);
                     const resolvedPath = getDefaultWorktreePath();
                     console.log(chalk.green(`Default worktree path set to: ${chalk.bold(resolvedPath)}`));
+                } else if (key === 'basebranch' && value) {
+                    if (scope.repo) {
+                        await setRepoBaseBranch(value);
+                        console.log(chalk.green(`Base branch for this repository set to: ${chalk.bold(value)}`));
+                    } else {
+                        setGlobalBaseBranch(value);
+                        console.log(chalk.green(`Global base branch set to: ${chalk.bold(value)}`));
+                    }
                 } else if (key === 'editor') {
                     console.error(chalk.red(`You must provide an editor name.`));
                     process.exit(1);
@@ -49,9 +78,12 @@ export async function configHandler(action: 'get' | 'set' | 'path' | 'clear', ke
                 } else if (key === 'worktreepath') {
                     console.error(chalk.red(`You must provide a path.`));
                     process.exit(1);
+                } else if (key === 'basebranch') {
+                    console.error(chalk.red(`You must provide a branch ref (e.g., origin/main).`));
+                    process.exit(1);
                 } else {
                     console.error(chalk.red(`Unknown configuration key to set: ${key}`));
-                    console.error(chalk.yellow(`Available keys: editor, provider, worktreepath`));
+                    console.error(chalk.yellow(`Available keys: editor, provider, worktreepath, basebranch`));
                     process.exit(1);
                 }
                 break;
@@ -59,9 +91,17 @@ export async function configHandler(action: 'get' | 'set' | 'path' | 'clear', ke
                 if (key === 'worktreepath') {
                     clearDefaultWorktreePath();
                     console.log(chalk.green(`Default worktree path cleared. Will now use sibling directory behavior.`));
+                } else if (key === 'basebranch') {
+                    if (scope.repo) {
+                        await clearRepoBaseBranch();
+                        console.log(chalk.green(`Base branch for this repository cleared.`));
+                    } else {
+                        clearGlobalBaseBranch();
+                        console.log(chalk.green(`Global base branch cleared. New branches will start from HEAD.`));
+                    }
                 } else {
                     console.error(chalk.red(`Unknown configuration key to clear: ${key}`));
-                    console.error(chalk.yellow(`Available keys: worktreepath`));
+                    console.error(chalk.yellow(`Available keys: worktreepath, basebranch`));
                     process.exit(1);
                 }
                 break;

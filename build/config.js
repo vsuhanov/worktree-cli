@@ -23,6 +23,10 @@ const schema = {
         type: 'string',
         // No default - falls back to sibling directory behavior when not set
     },
+    baseBranch: {
+        type: 'string',
+        // No default - new branches start from HEAD when not set
+    },
 };
 const config = new Conf({
     projectName: packageName, // Use the actual package name
@@ -76,4 +80,16 @@ export function setDefaultWorktreePath(worktreePath) {
 // Function to clear the default worktree path
 export function clearDefaultWorktreePath() {
     config.delete('defaultWorktreePath');
+}
+// Function to get the global base branch for new worktrees
+export function getGlobalBaseBranch() {
+    return config.get('baseBranch');
+}
+// Function to set the global base branch for new worktrees
+export function setGlobalBaseBranch(baseBranch) {
+    config.set('baseBranch', baseBranch);
+}
+// Function to clear the global base branch
+export function clearGlobalBaseBranch() {
+    config.delete('baseBranch');
 }

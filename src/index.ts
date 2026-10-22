@@ -37,6 +37,10 @@ program
     "-e, --editor <editor>",
     "Editor to use for opening the worktree (e.g., code, webstorm, windsurf, etc.)"
   )
+  .option(
+    "-b, --base <ref>",
+    "Ref to create a new branch from (e.g., origin/main). Overrides the configured base branch"
+  )
   .description(
     "Create a new worktree for the specified branch, install dependencies if specified, and open in editor."
   )
@@ -63,6 +67,10 @@ program
     "-t, --trust",
     "Trust and run setup commands without confirmation (for CI environments)",
     false
+  )
+  .option(
+    "-b, --base <ref>",
+    "Ref to create a new branch from (e.g., origin/main). Overrides the configured base branch"
   )
   .description(
     "Create a new worktree and run setup scripts from worktrees.json or .cursor/worktrees.json"
@@ -199,6 +207,16 @@ program
           .description("Set the default directory for new worktrees.")
           .action((worktreePath) => configHandler("set", "worktreepath", worktreePath))
       )
+      .addCommand(
+        new Command("basebranch")
+          .argument(
+            "<ref>",
+            "Ref new branches are created from (e.g., origin/main)"
+          )
+          .option("--repo", "Store for this repository only instead of globally")
+          .description("Set the base ref new branches are created from.")
+          .action((ref, options) => configHandler("set", "basebranch", ref, options))
+      )
   )
   .addCommand(
     new Command("get")
@@ -218,6 +236,12 @@ program
           .description("Get the currently configured default worktree directory.")
           .action(() => configHandler("get", "worktreepath"))
       )
+      .addCommand(
+        new Command("basebranch")
+          .option("--repo", "Show the value stored for this repository only")
+          .description("Get the configured base ref new branches are created from.")
+          .action((options) => configHandler("get", "basebranch", undefined, options))
+      )
   )
   .addCommand(
     new Command("clear")
@@ -226,6 +250,12 @@ program
         new Command("worktreepath")
           .description("Clear the default worktree directory (revert to sibling behavior).")
           .action(() => configHandler("clear", "worktreepath"))
+      )
+      .addCommand(
+        new Command("basebranch")
+          .option("--repo", "Clear the value stored for this repository only")
+          .description("Clear the base ref (new branches start from HEAD).")
+          .action((options) => configHandler("clear", "basebranch", undefined, options))
       )
   )
   .addCommand(

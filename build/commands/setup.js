@@ -9,6 +9,7 @@ import { AtomicWorktreeOperation } from "../utils/atomic.js";
 import { handleDirtyState } from "../utils/tui.js";
 import { runSetupScriptsSecure } from "../utils/setup.js";
 import { onShutdown } from "../utils/shutdown.js";
+import { resolveBaseBranch, fetchBaseRef } from "../utils/base.js";
 export async function setupWorktreeHandler(branchName = "main", options = {}) {
     let stashHash = null;
     let unregisterShutdown = null;
@@ -23,8 +24,9 @@ export async function setupWorktreeHandler(branchName = "main", options = {}) {
         }
         // 2. Check if this is a bare repository
         const isBare = await isMainRepoBare();
-        // 3. Check if main worktree is clean (skip for bare repos)
-        if (!isBare) {
+        const baseBranch = await resolveBaseBranch(options.base);
+        // 3. Check if main worktree is clean (skip for bare repos and when branching from a configured base)
+        if (!isBare && !baseBranch) {
             console.log(chalk.blue("Checking if main worktree is clean..."));
             const isClean = await isWorktreeClean(".");
             if (!isClean) {
@@ -97,10 +99,19 @@ export async function setupWorktreeHandler(branchName = "main", options = {}) {
             const atomic = new AtomicWorktreeOperation();
             try {
                 if (!branchExists) {
-                    console.log(chalk.yellow(`Branch "${branchName}" doesn't exist. Creating new branch with worktree...`));
-                    await atomic.createWorktree(resolvedPath, branchName, true);
+                    if (baseBranch) {
+                        console.log(chalk.yellow(`Branch "${branchName}" doesn't exist. Creating it from ${baseBranch.ref} (${baseBranch.source})...`));
+                        await fetchBaseRef(baseBranch.ref);
+                    }
+                    else {
+                        console.log(chalk.yellow(`Branch "${branchName}" doesn't exist. Creating new branch with worktree...`));
+                    }
+                    await atomic.createWorktree(resolvedPath, branchName, true, baseBranch?.ref);
                 }
                 else {
+                    if (baseBranch) {
+                        console.log(chalk.yellow(`Branch "${branchName}" already exists; ignoring base ${baseBranch.ref}.`));
+                    }
                     console.log(chalk.green(`Using existing branch "${branchName}".`));
                     await atomic.createWorktree(resolvedPath, branchName, false);
                 }
